@@ -11,8 +11,8 @@ Next.js Web-App zum Herunterladen von YouTube-Musik als MP3 – mit Playlist-Sup
 ## Screenshots
 
 <div align="center">
-  <img src="/screenshots/search.svg" alt="MusicFetch Suche" width="45%" />
-  <img src="/screenshots/playlist.svg" alt="MusicFetch Playlists" width="45%" />
+  <img src="https://raw.githubusercontent.com/naix1337/music-fetch/main/screenshots/search.png" alt="MusicFetch Suche" width="45%" />
+  <img src="https://raw.githubusercontent.com/naix1337/music-fetch/main/screenshots/playlist.png" alt="MusicFetch Playlists" width="45%" />
   <br/>
   <em>Suche (links) – Playlist-Ansicht mit Download-Queue (rechts)</em>
 </div>
