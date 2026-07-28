@@ -113,7 +113,7 @@ export function StarsBackground({
       onMouseMove={handleMouseMove}
       {...props}
     >
-      <motion.div style={{ x: springX, y: springY }}>
+      <motion.div className="pointer-events-none" style={{ x: springX, y: springY }}>
         <StarLayer
           count={1000}
           size={1}
@@ -141,7 +141,7 @@ export function StarsBackground({
           starColor={starColor}
         />
       </motion.div>
-      {children}
+      <div className="relative z-10">{children}</div>
     </div>
   )
 }
