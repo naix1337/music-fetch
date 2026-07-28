@@ -154,22 +154,16 @@ export function DownloadQueue() {
   const [downloads, setDownloads] = useState<DownloadItem[]>([])
   const downloadsRef = useRef(downloads)
   downloadsRef.current = downloads
-
-  useEffect(() => {
-    _addDownloadFn = (taskId: string, title: string) => {
-      setDownloads((prev) => [...prev, { taskId, title, status: "active" }])
-    }
-    return () => {
-      _addDownloadFn = null
-    }
-  }, [])
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const dismissDownload = useCallback((taskId: string) => {
     setDownloads((prev) => prev.filter((d) => d.taskId !== taskId))
   }, [])
 
+  // Adaptive polling: nur wenn active Downloads + sichtbarer Tab
   useEffect(() => {
-    const interval = setInterval(async () => {
+    intervalRef.current = setInterval(async () => {
+      if (document.hidden) return // Tab nicht sichtbar
       const current = downloadsRef.current
       const activeDownloads = current.filter((d) => d.status === "active")
       if (activeDownloads.length === 0) return
@@ -199,32 +193,22 @@ export function DownloadQueue() {
 
             if (data.status === "completed") {
               setTimeout(() => {
-                dismissDownload(download.taskId)
+                setDownloads((p) => p.filter((x) => x.taskId !== download.taskId))
               }, 4000)
               return prev.map((d) =>
                 d.taskId === download.taskId
-                  ? {
-                      ...d,
-                      status: "completed" as const,
-                      message: "Fertig",
-                      progress: 100,
-                    }
+                  ? { ...d, status: "completed" as const, message: "Fertig", progress: 100 }
                   : d,
               )
             }
 
             if (data.status === "error") {
               setTimeout(() => {
-                dismissDownload(download.taskId)
+                setDownloads((p) => p.filter((x) => x.taskId !== download.taskId))
               }, 5000)
               return prev.map((d) =>
                 d.taskId === download.taskId
-                  ? {
-                      ...d,
-                      status: "error" as const,
-                      message: data.error ?? "Download fehlgeschlagen",
-                      progress: progress,
-                    }
+                  ? { ...d, status: "error" as const, message: data.error ?? "Download fehlgeschlagen", progress }
                   : d,
               )
             }
@@ -245,8 +229,18 @@ export function DownloadQueue() {
       }
     }, 1500)
 
-    return () => clearInterval(interval)
-  }, [dismissDownload])
+      return () => {
+        if (intervalRef.current) clearInterval(intervalRef.current)
+      }
+  }, [])
+
+  // Module-level addDownload registrieren
+  useEffect(() => {
+    _addDownloadFn = (taskId: string, title: string) => {
+      setDownloads((prev) => [...prev, { taskId, title, status: "active" }])
+    }
+    return () => { _addDownloadFn = null }
+  }, [])
 
   return (
     <AnimatePresence>
