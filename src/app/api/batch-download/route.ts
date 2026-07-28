@@ -46,6 +46,7 @@ function startDownload(taskId: string): void {
       '--embed-metadata',
       '--embed-thumbnail',
       '--parse-metadata', 'uploader:%(artist)s',
+      '--parse-metadata', '%(title)s:%(album)s',
       '-o', `${outputDir}/%(title)s.%(ext)s`,
       '--no-playlist',
       task.url,
