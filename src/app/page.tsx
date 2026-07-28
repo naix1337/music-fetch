@@ -29,7 +29,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("search")
 
   return (
-    <StarsBackground>
+    <StarsBackground className="min-h-screen" speed={80} factor={0.08}>
       <div className="min-h-screen flex flex-col">
         {/* Header */}
         <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-800">

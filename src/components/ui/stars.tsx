@@ -1,61 +1,151 @@
 "use client"
 
-import { useMemo } from "react"
-import { motion, type Transition } from "motion/react"
+import * as React from "react"
+import {
+  type HTMLMotionProps,
+  motion,
+  type SpringOptions,
+  type Transition,
+  useMotionValue,
+  useSpring,
+} from "motion/react"
 
-interface StarLayerProps {
-  factor: number
-  speed: number
-  transition?: Transition
-  starColor?: string
+type StarLayerProps = HTMLMotionProps<"div"> & {
+  count: number
+  size: number
+  transition: Transition
+  starColor: string
 }
 
-function StarLayer({ factor, speed, transition, starColor = "#fff" }: StarLayerProps) {
-  const boxShadow = useMemo(() => {
-    const count = Math.floor(100 * factor)
-    const shadows: string[] = []
-    for (let i = 0; i < count; i++) {
-      const x = Math.random() * 2000
-      const y = Math.random() * 1000
-      const size = Math.random() * 2 + 0.5
-      shadows.push(`${x}px ${y}px ${size}px ${starColor}`)
-      shadows.push(`${x}px ${y + 1000}px ${size}px ${starColor}`)
-    }
-    return shadows.join(", ")
-  }, [factor, starColor])
+function generateStars(count: number, starColor: string) {
+  const shadows: string[] = []
+  for (let i = 0; i < count; i++) {
+    const x = Math.floor(Math.random() * 4000) - 2000
+    const y = Math.floor(Math.random() * 4000) - 2000
+    shadows.push(`${x}px ${y}px ${starColor}`)
+  }
+  return shadows.join(", ")
+}
+
+function StarLayer({
+  count = 1000,
+  size = 1,
+  transition = { repeat: Infinity, duration: 50, ease: "linear" },
+  starColor = "#fff",
+  className,
+  ...props
+}: StarLayerProps) {
+  const [boxShadow, setBoxShadow] = React.useState<string>("")
+
+  React.useEffect(() => {
+    setBoxShadow(generateStars(count, starColor))
+  }, [count, starColor])
 
   return (
     <motion.div
-      className="absolute inset-0"
-      style={{
-        width: 1,
-        height: 1,
-        boxShadow,
-      }}
-      animate={{ y: [0, -1000] }}
-      transition={{
-        duration: speed,
-        repeat: Infinity,
-        ease: "linear",
-        ...transition,
-      }}
-    />
+      data-slot="star-layer"
+      animate={{ y: [0, -2000] }}
+      transition={transition}
+      className={cn("absolute top-0 left-0 w-full h-[2000px]", className)}
+      {...props}
+    >
+      <div
+        className="absolute bg-transparent rounded-full"
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          boxShadow: boxShadow,
+        }}
+      />
+      <div
+        className="absolute bg-transparent rounded-full top-[2000px]"
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          boxShadow: boxShadow,
+        }}
+      />
+    </motion.div>
   )
 }
 
-interface StarsBackgroundProps {
-  children: React.ReactNode
+type StarsBackgroundProps = React.ComponentProps<"div"> & {
+  factor?: number
+  speed?: number
+  transition?: SpringOptions
+  starColor?: string
 }
 
-export function StarsBackground({ children }: StarsBackgroundProps) {
+export function StarsBackground({
+  children,
+  className,
+  factor = 0.05,
+  speed = 50,
+  transition = { stiffness: 50, damping: 20 },
+  starColor = "#fff",
+  ...props
+}: StarsBackgroundProps) {
+  const offsetX = useMotionValue(1)
+  const offsetY = useMotionValue(1)
+
+  const springX = useSpring(offsetX, transition)
+  const springY = useSpring(offsetY, transition)
+
+  const handleMouseMove = React.useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const centerX = window.innerWidth / 2
+      const centerY = window.innerHeight / 2
+      const newOffsetX = -(e.clientX - centerX) * factor
+      const newOffsetY = -(e.clientY - centerY) * factor
+      offsetX.set(newOffsetX)
+      offsetY.set(newOffsetY)
+    },
+    [offsetX, offsetY, factor],
+  )
+
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="absolute inset-0 bg-slate-950" />
-      <StarLayer factor={0.1} speed={120} starColor="rgba(148, 163, 184, 0.3)" />
-      <StarLayer factor={0.05} speed={80} starColor="rgba(148, 163, 184, 0.5)" />
-      <StarLayer factor={0.02} speed={40} starColor="rgba(255, 255, 255, 0.8)" />
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/0 via-slate-950/60 to-slate-950 pointer-events-none" />
-      <div className="relative z-10">{children}</div>
+    <div
+      data-slot="stars-background"
+      className={cn(
+        "relative size-full overflow-hidden bg-[radial-gradient(ellipse_at_bottom,_#262626_0%,_#000_100%)]",
+        className,
+      )}
+      onMouseMove={handleMouseMove}
+      {...props}
+    >
+      <motion.div style={{ x: springX, y: springY }}>
+        <StarLayer
+          count={1000}
+          size={1}
+          transition={{ repeat: Infinity, duration: speed, ease: "linear" }}
+          starColor={starColor}
+        />
+        <StarLayer
+          count={400}
+          size={2}
+          transition={{
+            repeat: Infinity,
+            duration: speed * 2,
+            ease: "linear",
+          }}
+          starColor={starColor}
+        />
+        <StarLayer
+          count={200}
+          size={3}
+          transition={{
+            repeat: Infinity,
+            duration: speed * 3,
+            ease: "linear",
+          }}
+          starColor={starColor}
+        />
+      </motion.div>
+      {children}
     </div>
   )
+}
+
+function cn(...classes: (string | undefined | null | false)[]) {
+  return classes.filter(Boolean).join(" ")
 }
