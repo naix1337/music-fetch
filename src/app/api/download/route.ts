@@ -29,8 +29,7 @@ function startDownload(taskId: string): void {
   incrementActive();
 
   const artist = safePath(task.channel || 'Unknown Artist');
-  const album = 'Singles';
-  const outputDir = `/opt/navidrome/music/${artist}/${album}`;
+  const outputDir = `/opt/navidrome/music/${artist}`;
 
   const ytProcess = spawn(
     'yt-dlp',
