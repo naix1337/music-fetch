@@ -10,6 +10,10 @@ import {
   canStartDownload,
 } from '@/lib/download-state';
 
+function safePath(s: string): string {
+  return s.replace(/[\\/*?:"<>|]/g, '_').replace(/\.\./g, '_').trim() || 'Unknown';
+}
+
 function startDownload(taskId: string): void {
   const tasks = getDownloadTasks();
   const task = tasks.get(taskId);
@@ -19,7 +23,9 @@ function startDownload(taskId: string): void {
   task.progress = 0;
   incrementActive();
 
-  const outputDir = '/opt/navidrome/music/Test';
+  const artist = safePath(task.channel || 'Unknown Artist');
+  const album = 'Singles';
+  const outputDir = `/opt/navidrome/music/${artist}/${album}`;
 
   const ytProcess = spawn(
     'yt-dlp',
@@ -32,8 +38,6 @@ function startDownload(taskId: string): void {
       '-o',
       `${outputDir}/%(title)s.%(ext)s`,
       '--no-playlist',
-      '--print',
-      'filename',
       task.url,
     ],
     {
@@ -42,10 +46,7 @@ function startDownload(taskId: string): void {
     }
   );
 
-  let stdout = '';
-
-  ytProcess.stdout?.on('data', (data: Buffer) => {
-    stdout += data.toString();
+  ytProcess.stdout?.on('data', (_data: Buffer) => {
     task.progress = Math.min(task.progress + 10, 90);
   });
 
@@ -62,15 +63,13 @@ function startDownload(taskId: string): void {
 
   ytProcess.on('close', (code: number | null) => {
     if (code === 0) {
-      const lines = stdout.trim().split('\n');
-      const filename = lines.length > 0 ? lines[lines.length - 1] : '';
       task.status = 'completed';
       task.progress = 100;
       task.result = {
         title: task.title,
         channel: task.channel,
         url: task.url,
-        file: filename,
+        file: outputDir,
       };
 
       runPostDownload(outputDir);
