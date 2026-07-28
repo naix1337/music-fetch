@@ -1,3 +1,47 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 @custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-mf-indigo: #6366f1;
+  --color-mf-purple: #a855f7;
+  --color-mf-cyan: #06b6d4;
+  --color-mf-surface: rgba(15, 15, 30, 0.6);
+  --color-mf-glass: rgba(255, 255, 255, 0.04);
+  --color-mf-glass-border: rgba(255, 255, 255, 0.08);
+  --color-mf-glass-hover: rgba(255, 255, 255, 0.1);
+
+  --animate-gradient-xy: gradient-xy 15s ease infinite;
+  --animate-float-slow: float-slow 8s ease-in-out infinite;
+  --animate-pulse-glow: pulse-glow 3s ease-in-out infinite;
+
+  @keyframes gradient-xy {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-12px); }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.5; filter: blur(60px); }
+    50% { opacity: 0.8; filter: blur(80px); }
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}

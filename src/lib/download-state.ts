@@ -82,3 +82,17 @@ export function generateTaskId(): string {
 export function canStartDownload(): boolean {
   return getActiveCount() < MAX_CONCURRENT;
 }
+
+export function cleanupOldTasks(maxAgeMs: number = 3600000): void {
+  const tasks = getDownloadTasks();
+  const cutoff = Date.now() - maxAgeMs;
+  for (const [id, task] of tasks) {
+    if (task.status === 'completed' || task.status === 'error') {
+      // Tasks don't store timestamps, so we use a simple approach:
+      // keep only the last 50 tasks, remove oldest completed/error ones
+      if (tasks.size > 50) {
+        tasks.delete(id);
+      }
+    }
+  }
+}

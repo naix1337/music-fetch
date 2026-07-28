@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { spawn, execSync } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import {
   type DownloadTask,
   type DownloadRequestBody,
@@ -11,7 +11,12 @@ import {
 } from '@/lib/download-state';
 
 function safePath(s: string): string {
-  return s.replace(/[\\/*?:"<>|]/g, '_').replace(/\.\./g, '_').trim() || 'Unknown';
+  return s
+    .replace(/[\\/*?:"<>|$;`(){}[\]!&#~]/g, '_')
+    .replace(/\.\./g, '_')
+    .replace(/\//g, '_')
+    .trim()
+    .substring(0, 120) || 'Unknown';
 }
 
 function startDownload(taskId: string): void {
@@ -85,9 +90,9 @@ function startDownload(taskId: string): void {
 
 function runPostDownload(dir: string): void {
   try {
-    execSync(`chown -R navidrome:navidrome "${dir}"`, {
+    spawnSync('chown', ['-R', 'navidrome:navidrome', dir], {
       timeout: 10000,
-      shell: '/bin/sh',
+      stdio: 'ignore',
     });
   } catch (err) {
     console.error('chown error:', err);
@@ -95,10 +100,10 @@ function runPostDownload(dir: string): void {
 
   try {
     const timestamp = Math.floor(Date.now() / 1000);
-    execSync(
-      `su -s /bin/sh navidrome -c "touch /opt/navidrome/music/.scan-${timestamp}"`,
-      { timeout: 10000, shell: '/bin/sh' }
-    );
+    spawnSync('su', [
+      '-s', '/bin/sh', 'navidrome', '-c',
+      `touch /opt/navidrome/music/.scan-${timestamp}`,
+    ], { timeout: 10000, stdio: 'ignore' });
   } catch (err) {
     console.error('scan trigger error:', err);
   }

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 
 interface YtDlpEntry {
   id?: string;
@@ -41,12 +41,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Ungultige URL' }, { status: 400 });
     }
 
-    const escapedUrl = url.replace(/"/g, '\\"');
+    const result = spawnSync('yt-dlp', [
+      '--dump-json',
+      '--flat-playlist',
+      '--no-download',
+      url,
+    ], {
+      timeout: 30000,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: false,
+    });
 
-    const stdout = execSync(
-      `yt-dlp --dump-json --flat-playlist --no-download "${escapedUrl}"`,
-      { timeout: 30000, encoding: 'utf-8' }
-    );
+    if (result.error) throw result.error;
+    if (result.status !== 0) throw new Error(`yt-dlp exited with code ${result.status}`);
+
+    const stdout = result.stdout?.toString('utf-8') || '';
 
     const tracks: PlaylistTrack[] = stdout
       .trim()

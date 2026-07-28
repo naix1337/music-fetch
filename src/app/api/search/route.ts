@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
+import { writeFileSync, unlinkSync, mkdtempSync, readFileSync } from 'fs';
+import { join } from 'path';
 
 interface YtDlpEntry {
   id?: string;
@@ -59,13 +61,24 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const prefix = SEARCH_SOURCES[source] || 'ytsearch';
-  const escapedQuery = q.replace(/"/g, '\\"');
+  const tmpDir = mkdtempSync('/tmp/mf-');
+  const tmpFile = join(tmpDir, 'results.json');
 
   try {
-    const stdout = execSync(
-      `yt-dlp --dump-json --flat-playlist "${prefix}10:${escapedQuery}"`,
-      { timeout: 30000, encoding: 'utf-8' }
-    );
+    const result = spawnSync('yt-dlp', [
+      '--dump-json',
+      '--flat-playlist',
+      `${prefix}10:${q}`,
+    ], {
+      timeout: 30000,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: false,
+    });
+
+    if (result.error) throw result.error;
+    if (result.status !== 0) throw new Error(`yt-dlp exit code ${result.status}`);
+
+    const stdout = result.stdout?.toString('utf-8') || '';
 
     const results: SearchResult[] = stdout
       .trim()

@@ -1,5 +1,14 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { spawn, execSync } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
+
+function safePath(s: string): string {
+  return s
+    .replace(/[\\/*?:"<>|$;`(){}[\]!&#~]/g, '_')
+    .replace(/\.\./g, '_')
+    .replace(/\//g, '_')
+    .trim()
+    .substring(0, 120) || 'Unknown';
+}
 import {
   type DownloadTask,
   type BatchTrack,
@@ -25,7 +34,9 @@ function startDownload(taskId: string): void {
   task.progress = 0;
   incrementActive();
 
-  const outputDir = '/opt/navidrome/music/Test';
+  const artist = safePath(task.channel || 'Unknown Artist');
+  const album = 'Singles';
+  const outputDir = `/opt/navidrome/music/${artist}/${album}`;
 
   const ytProcess = spawn(
     'yt-dlp',
@@ -38,8 +49,6 @@ function startDownload(taskId: string): void {
       '-o',
       `${outputDir}/%(title)s.%(ext)s`,
       '--no-playlist',
-      '--print',
-      'filename',
       task.url,
     ],
     {
@@ -92,9 +101,8 @@ function startDownload(taskId: string): void {
 
 function runPostDownload(dir: string): void {
   try {
-    execSync(`chown -R navidrome:navidrome "${dir}"`, {
-      timeout: 10000,
-      shell: '/bin/sh',
+    spawnSync('chown', ['-R', 'navidrome:navidrome', dir], {
+      timeout: 10000, stdio: 'ignore',
     });
   } catch (err) {
     console.error('chown error:', err);
@@ -102,10 +110,10 @@ function runPostDownload(dir: string): void {
 
   try {
     const timestamp = Math.floor(Date.now() / 1000);
-    execSync(
-      `su -s /bin/sh navidrome -c "touch /opt/navidrome/music/.scan-${timestamp}"`,
-      { timeout: 10000, shell: '/bin/sh' }
-    );
+    spawnSync('su', [
+      '-s', '/bin/sh', 'navidrome', '-c',
+      `touch /opt/navidrome/music/.scan-${timestamp}`,
+    ], { timeout: 10000, stdio: 'ignore' });
   } catch (err) {
     console.error('scan trigger error:', err);
   }
