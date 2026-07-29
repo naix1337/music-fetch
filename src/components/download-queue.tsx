@@ -14,10 +14,8 @@ interface DownloadItem {
   progress?: number
 }
 
-let _addDownloadFn: ((taskId: string, title: string) => void) | null = null
-
 export function addDownload(taskId: string, title: string): void {
-  _addDownloadFn?.(taskId, title)
+  window.dispatchEvent(new CustomEvent('music-download-start', { detail: { taskId, title } }))
 }
 
 function CompletionCheckmark() {
@@ -278,12 +276,14 @@ export function DownloadQueue() {
       }
   }, [])
 
-  // Module-level addDownload registrieren
+  // Auf Download-Start via Custom Event lauschen
   useEffect(() => {
-    _addDownloadFn = (taskId: string, title: string) => {
+    const handler = (e: Event) => {
+      const { taskId, title } = (e as CustomEvent).detail
       setDownloads((prev) => [...prev, { taskId, title, status: "active" }])
     }
-    return () => { _addDownloadFn = null }
+    window.addEventListener('music-download-start', handler)
+    return () => window.removeEventListener('music-download-start', handler)
   }, [])
 
   return (
