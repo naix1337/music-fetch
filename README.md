@@ -101,10 +101,28 @@ MusicFetch ist für den Einsatz mit [Navidrome](https://www.navidrome.org/) opti
 - **Berechtigungen** – Dateien werden automatisch auf `navidrome:navidrome` gesetzt
 - **Ordnerstruktur** – `Artist/Songtitel.mp3` (kein Album-Ordner → Einzeltitel in Navidrome)
 
-### Navidrome installieren
+### Navidrome installieren (per Helper-Script)
 
+**Variante A – Offizielles Install-Script (empfohlen):**
 ```bash
-# Beispiel für Debian/Ubuntu
+curl -sSL https://raw.githubusercontent.com/navidrome/navidrome/main/install.sh | bash
+```
+Installiert Navidrome + systemd Service + Konfiguration automatisch.
+
+**Variante B – Per Docker-Helfer:**
+```bash
+docker run -d \
+  --name navidrome \
+  --restart unless-stopped \
+  -p 4533:4533 \
+  -v /opt/navidrome/data:/data \
+  -v /opt/navidrome/music:/music:ro \
+  -e ND_LOGLEVEL=info \
+  deluan/navidrome:latest
+```
+
+**Variante C – Manuell (Debian/Ubuntu):**
+```bash
 wget https://github.com/navidrome/navidrome/releases/latest/download/navidrome_linux_amd64.tar.gz
 tar xzf navidrome_linux_amd64.tar.gz
 sudo install navidrome /usr/bin/
@@ -192,3 +210,22 @@ MIT
 <div align="center">
   <p>Made with ❤️ by <a href="https://github.com/naix1337">naix1337</a></p>
 </div>
+
+### Navidrome konfigurieren
+
+`/etc/navidrome/navidrome.toml`:
+```toml
+DataFolder = "/var/lib/navidrome"
+MusicFolder = "/opt/navidrome/music"
+DefaultAdminUsername = "admin"
+DefaultAdminPassword = "admin"
+```
+
+### Navidrome als systemd Service
+
+```bash
+sudo wget https://raw.githubusercontent.com/navidrome/navidrome/main/contrib/navidrome.service -O /etc/systemd/system/navidrome.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now navidrome
+```
+➡️ **http://deine-ip:4533** – Login mit `admin` / `admin`
