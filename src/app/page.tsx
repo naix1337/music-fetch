@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect, useMemo, lazy, Suspense } from "react"
+import { useState, useEffect, useMemo, lazy, Suspense, useCallback } from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { Search, ListMusic, Library, Music } from "lucide-react"
+import { Search, ListMusic, Library, Clock, Settings, Music } from "lucide-react"
 import { StarsBackground } from "@/components/ui/stars"
 import { DownloadQueue } from "@/components/download-queue"
 import { ToastContainer } from "@/components/toast"
+import { AudioPlayer } from "@/components/audio-player"
 import { cn } from "@/lib/utils"
 
 // Lazy-loaded tab components for code splitting
@@ -18,8 +19,18 @@ const PlaylistTab = lazy(() =>
 const LibraryTab = lazy(() =>
   import("@/components/library-tab").then((m) => ({ default: m.LibraryTab })),
 )
+const DownloadHistoryLazy = lazy(() =>
+  import("@/components/download-history").then((m) => ({
+    default: m.DownloadHistory,
+  })),
+)
+const AdminDashboardLazy = lazy(() =>
+  import("@/components/admin-dashboard").then((m) => ({
+    default: m.AdminDashboard,
+  })),
+)
 
-type Tab = "search" | "playlists" | "library"
+type Tab = "search" | "playlists" | "library" | "history" | "admin"
 
 interface TabConfig {
   id: Tab
@@ -31,12 +42,22 @@ const tabs: TabConfig[] = [
   { id: "search", label: "Suchen", icon: <Search className="w-4 h-4" /> },
   { id: "playlists", label: "Playlists", icon: <ListMusic className="w-4 h-4" /> },
   { id: "library", label: "Bibliothek", icon: <Library className="w-4 h-4" /> },
+  { id: "history", label: "Verlauf", icon: <Clock className="w-4 h-4" /> },
+  { id: "admin", label: "Admin", icon: <Settings className="w-4 h-4" /> },
 ]
 
 const tabComponent: Record<Tab, React.LazyExoticComponent<any>> = {
   search: SearchTab,
   playlists: PlaylistTab,
   library: LibraryTab,
+  history: DownloadHistoryLazy,
+  admin: AdminDashboardLazy,
+}
+
+interface PlayerTrack {
+  title: string
+  artist: string
+  file: string
 }
 
 // Tab loading skeleton
@@ -168,10 +189,15 @@ function FloatingMusicNotes({ reduced }: { reduced: boolean }) {
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("search")
   const [mounted, setMounted] = useState(false)
+  const [currentTrack, setCurrentTrack] = useState<PlayerTrack | null>(null)
   const reduced = useReducedMotion()
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  const handleClosePlayer = useCallback(() => {
+    setCurrentTrack(null)
   }, [])
 
   const TabComponent = tabComponent[activeTab]
@@ -184,7 +210,10 @@ export default function Home() {
       {mounted && <FloatingMusicNotes reduced={reduced} />}
 
       {/* Main content */}
-      <div className="relative z-10 min-h-screen flex flex-col">
+      <div className={cn(
+        "relative z-10 min-h-screen flex flex-col",
+        currentTrack && "pb-24",
+      )}>
         <header className="sticky top-0 z-20 backdrop-blur-xl bg-black/20 border-b border-white/[0.06]">
           <div className="max-w-5xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
             <div className="flex items-center gap-3">
@@ -259,6 +288,9 @@ export default function Home() {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Audio Player */}
+      <AudioPlayer track={currentTrack} onClose={handleClosePlayer} />
 
       {/* Overlay UI */}
       <DownloadQueue />

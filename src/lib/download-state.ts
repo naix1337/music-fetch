@@ -41,6 +41,7 @@ export interface BatchRequestBody {
 declare global {
   var __downloadTasks: Map<string, DownloadTask> | undefined;
   var __activeDownloads: number | undefined;
+  var __completedDownloads: number | undefined;
 }
 
 const MAX_CONCURRENT = 3;
@@ -66,6 +67,19 @@ export function setActiveCount(count: number): void {
 export function incrementActive(): number {
   const current = getActiveCount();
   setActiveCount(current + 1);
+  return current + 1;
+}
+
+export function getCompletedCount(): number {
+  if (globalThis.__completedDownloads === undefined) {
+    globalThis.__completedDownloads = 0;
+  }
+  return globalThis.__completedDownloads;
+}
+
+export function incrementCompleted(): number {
+  const current = getCompletedCount();
+  globalThis.__completedDownloads = current + 1;
   return current + 1;
 }
 

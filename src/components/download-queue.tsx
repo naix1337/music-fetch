@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { Loader2, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { addDownloadHistory } from "@/components/download-history"
 
 interface DownloadItem {
   taskId: string
@@ -160,7 +161,25 @@ export function DownloadQueue() {
     setDownloads((prev) => prev.filter((d) => d.taskId !== taskId))
   }, [])
 
-  // Adaptive polling: nur wenn active Downloads + sichtbarer Tab
+  // SSE für Echtzeit-Updates (fallback: Polling)
+  useEffect(() => {
+    const evtSource = new EventSource('/api/events')
+    evtSource.addEventListener('download-update', (e) => {
+      try {
+        const data = JSON.parse(e.data)
+        setDownloads((prev) =>
+          prev.map((d) =>
+            d.taskId === data.taskId
+              ? { ...d, status: data.status, message: data.error || d.message, progress: data.progress }
+              : d,
+          ),
+        )
+      } catch {}
+    })
+    return () => evtSource.close()
+  }, [])
+
+  // Adaptive polling: fallback falls SSE ausfallt
   useEffect(() => {
     intervalRef.current = setInterval(async () => {
       if (document.hidden) return // Tab nicht sichtbar
@@ -192,6 +211,14 @@ export function DownloadQueue() {
             const progress = data.progress ?? existing.progress ?? 0
 
             if (data.status === "completed") {
+              addDownloadHistory({
+                taskId: download.taskId,
+                title: data.result?.title ?? download.title,
+                artist: data.result?.channel ?? "",
+                url: data.result?.url ?? "",
+                completedAt: new Date().toISOString(),
+                file: data.result?.file ?? "",
+              })
               setTimeout(() => {
                 setDownloads((p) => p.filter((x) => x.taskId !== download.taskId))
               }, 4000)

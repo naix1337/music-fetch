@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import {
   Search,
@@ -8,10 +8,10 @@ import {
   Clock,
   Download,
   BadgeCheck,
-  Play,
 } from "lucide-react"
 import { addDownload } from "@/components/download-queue"
 import { showToast } from "@/components/toast"
+import { SearchHistory, addSearchHistory } from "@/components/search-history"
 import { cn } from "@/lib/utils"
 
 interface SearchResult {
@@ -82,10 +82,15 @@ export function SearchTab() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set())
+  const [focused, setFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleSearch = useCallback(async () => {
     const q = query.trim()
     if (!q) return
+    addSearchHistory(q)
+    setFocused(false)
+    inputRef.current?.blur()
     setLoading(true)
     setError(null)
     setResults([])
@@ -148,6 +153,40 @@ export function SearchTab() {
     [downloadingIds],
   )
 
+  const handleHistorySelect = useCallback(
+    (q: string) => {
+      setQuery(q)
+      setFocused(false)
+      inputRef.current?.blur()
+      // Trigger search with the selected query
+      setLoading(true)
+      setError(null)
+      setResults([])
+      const doSearch = async () => {
+        try {
+          const res = await fetch(
+            `/api/search?q=${encodeURIComponent(q)}&source=${source}`,
+          )
+          if (!res.ok) {
+            const errData = await res.json().catch(() => null)
+            throw new Error(errData?.error ?? "Suche fehlgeschlagen")
+          }
+          const data = await res.json()
+          setResults(data.results ?? [])
+          if (!data.results || data.results.length === 0) {
+            setError("Keine Ergebnisse gefunden")
+          }
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Suche fehlgeschlagen")
+        } finally {
+          setLoading(false)
+        }
+      }
+      doSearch()
+    },
+    [source],
+  )
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Search Bar */}
@@ -158,9 +197,15 @@ export function SearchTab() {
             <div className="relative flex items-center">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               <input
+                ref={inputRef}
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setFocused(true)}
+                onBlur={() => {
+                  // Delay so click on history item can fire
+                  setTimeout(() => setFocused(false), 200)
+                }}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="Song, Künstler oder Album..."
                 className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 transition-all duration-300 backdrop-blur-md"
@@ -179,6 +224,9 @@ export function SearchTab() {
           Suchen
         </motion.button>
       </div>
+
+      {/* Search History */}
+      <SearchHistory onSelect={handleHistorySelect} visible={focused && !loading && results.length === 0} />
 
       {/* Source Pills */}
       <div className="flex flex-wrap gap-2">

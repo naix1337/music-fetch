@@ -10,13 +10,15 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "lightningcss": "^1.29.3",
     "lucide-react": "^1.27.0",
     "motion": "^12.42.2",
     "next": "16.2.12",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.6.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "ws": "^8.21.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

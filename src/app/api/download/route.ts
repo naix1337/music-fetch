@@ -1,11 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { spawn, spawnSync } from 'child_process';
+import { broadcast } from '@/app/api/events/route';
 import {
   type DownloadTask,
   type DownloadRequestBody,
   getDownloadTasks,
   incrementActive,
   decrementActive,
+  incrementCompleted,
   generateTaskId,
   canStartDownload,
 } from '@/lib/download-state';
@@ -53,6 +55,7 @@ function startDownload(taskId: string): void {
 
   ytProcess.stdout?.on('data', (_data: Buffer) => {
     task.progress = Math.min(task.progress + 10, 90);
+    broadcast('download-update', { taskId, status: task.status, progress: task.progress });
   });
 
   ytProcess.stderr?.on('data', (_data: Buffer) => {
@@ -62,6 +65,7 @@ function startDownload(taskId: string): void {
   ytProcess.on('error', (err: Error) => {
     task.status = 'error';
     task.error = err.message;
+    broadcast('download-update', { taskId, status: 'error', error: err.message });
     decrementActive();
     processQueue();
   });
@@ -70,6 +74,7 @@ function startDownload(taskId: string): void {
     if (code === 0) {
       task.status = 'completed';
       task.progress = 100;
+      broadcast('download-update', { taskId, status: 'completed', progress: 100 });
       task.result = {
         title: task.title,
         channel: task.channel,
@@ -77,6 +82,7 @@ function startDownload(taskId: string): void {
         file: outputDir,
       };
 
+      incrementCompleted();
       runPostDownload(outputDir);
     } else {
       task.status = 'error';
