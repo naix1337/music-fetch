@@ -30,8 +30,9 @@ const SEARCH_SOURCES: Record<string, string> = {
 };
 
 function formatDuration(duration: number): string {
-  const minutes = Math.floor(duration / 60);
-  const seconds = duration % 60;
+  const totalSec = Math.round(duration);
+  const minutes = Math.floor(totalSec / 60);
+  const seconds = totalSec % 60;
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
