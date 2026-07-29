@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { readdirSync, statSync } from 'fs';
+import { readdirSync, statSync, existsSync } from 'fs';
 import { join, extname } from 'path';
+import { spawnSync } from 'child_process';
 
 interface TrackInfo {
   path: string;
@@ -8,6 +9,27 @@ interface TrackInfo {
   artist: string;
   album: string;
   size_mb: number;
+  duration: number;
+  duration_str: string;
+}
+
+function getDuration(filePath: string): { duration: number; duration_str: string } {
+  try {
+    if (!existsSync(filePath)) return { duration: 0, duration_str: '0:00' };
+    const result = spawnSync('ffprobe', [
+      '-v', 'error',
+      '-show_entries', 'format=duration',
+      '-of', 'default=noprint_wrappers=1:nokey=1',
+      filePath,
+    ], { timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'] });
+    if (result.status !== 0) return { duration: 0, duration_str: '0:00' };
+    const secs = Math.round(parseFloat(result.stdout?.toString().trim() || '0'));
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return { duration: secs, duration_str: `${m}:${String(s).padStart(2, '0')}` };
+  } catch {
+    return { duration: 0, duration_str: '0:00' };
+  }
 }
 
 const AUDIO_EXTENSIONS = new Set([
@@ -64,12 +86,15 @@ function scanDirectory(dir: string, maxDepth: number = 5): TrackInfo[] {
           try {
             const stats = statSync(fullPath);
             const tags = extractTags(fullPath);
+            const dur = getDuration(fullPath);
             tracks.push({
               path: fullPath,
               title: tags.title,
               artist: tags.artist,
               album: tags.album,
               size_mb: parseFloat((stats.size / (1024 * 1024)).toFixed(2)),
+              duration: dur.duration,
+              duration_str: dur.duration_str,
             });
           } catch {
             console.error('Could not read file:', fullPath);

@@ -11,6 +11,8 @@ interface LibraryTrack {
   album: string
   size_mb: number
   path: string
+  duration: number
+  duration_str: string
 }
 
 const containerVariants = {
@@ -216,6 +218,20 @@ export function LibraryTab() {
                       {track.artist || "Unbekannter Künstler"}
                       {track.album ? ` · ${track.album}` : ""}
                     </p>
+                    {/* Duration bar */}
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="flex-1 h-1 bg-white/[0.06] rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full bg-gradient-to-r from-indigo-500/60 to-purple-500/60"
+                          initial={{ width: "0%" }}
+                          animate={{ width: `${Math.min(100, (track.duration || 0) / 300 * 100)}%` }}
+                          transition={{ duration: 1, ease: "easeOut" }}
+                        />
+                      </div>
+                      <span className="text-xs text-slate-500 shrink-0 tabular-nums w-10 text-right">
+                        {track.duration_str || "0:00"}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Size indicator */}
