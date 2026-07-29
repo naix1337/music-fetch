@@ -167,13 +167,27 @@ export function DownloadQueue() {
     evtSource.addEventListener('download-update', (e) => {
       try {
         const data = JSON.parse(e.data)
-        setDownloads((prev) =>
-          prev.map((d) =>
+        setDownloads((prev) => {
+          // Bei completed: in Verlauf speichern
+          if (data.status === 'completed') {
+            const existing = prev.find((d) => d.taskId === data.taskId)
+            if (existing) {
+              addDownloadHistory({
+                taskId: data.taskId,
+                title: existing.title,
+                artist: existing.message || '',
+                url: '',
+                completedAt: new Date().toISOString(),
+                file: '',
+              })
+            }
+          }
+          return prev.map((d) =>
             d.taskId === data.taskId
               ? { ...d, status: data.status, message: data.error || d.message, progress: data.progress }
               : d,
-          ),
-        )
+          )
+        })
       } catch {}
     })
     return () => evtSource.close()
