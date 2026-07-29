@@ -53,13 +53,20 @@ function startDownload(taskId: string): void {
     }
   );
 
-  ytProcess.stdout?.on('data', (_data: Buffer) => {
+  ytProcess.stdout?.on('data', () => {
     task.progress = Math.min(task.progress + 10, 90);
-    broadcast('download-update', { taskId, status: task.status, progress: task.progress });
+    broadcast('download-update', { taskId, status: 'downloading', progress: task.progress });
   });
 
-  ytProcess.stderr?.on('data', (_data: Buffer) => {
-    task.progress = Math.min(task.progress + 5, 80);
+  ytProcess.stderr?.on('data', (data: Buffer) => {
+    const line = data.toString('utf-8');
+    // Parse yt-dlp progress: [download]  45.3% of 3.45MiB at 1.23MiB/s ETA 00:02
+    const match = line.match(/(\d+(?:\.\d+)?)%/);
+    if (match) {
+      const pct = Math.min(Math.round(parseFloat(match[1])), 99);
+      task.progress = pct;
+      broadcast('download-update', { taskId, status: 'downloading', progress: pct });
+    }
   });
 
   ytProcess.on('error', (err: Error) => {

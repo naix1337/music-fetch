@@ -123,15 +123,18 @@ function DownloadItemCard({ download, onDismiss }: DownloadItemCardProps) {
 
           {/* Progress bar */}
           {download.status === "active" && (
-            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400"
-                initial={{ width: "0%" }}
-                animate={{
-                  width: `${download.progress ?? 50}%`,
-                }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-              />
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-2 bg-white/[0.06] rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400"
+                  initial={{ width: "0%" }}
+                  animate={{ width: `${download.progress ?? 0}%` }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                />
+              </div>
+              <span className="text-[10px] text-slate-400 font-mono tabular-nums shrink-0 w-8 text-right">
+                {download.progress ?? 0}%
+              </span>
             </div>
           )}
         </div>
