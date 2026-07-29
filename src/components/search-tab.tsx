@@ -30,8 +30,6 @@ interface Source {
 const sources: Source[] = [
   { value: "youtube", label: "YouTube" },
   { value: "soundcloud", label: "SoundCloud" },
-  { value: "bandcamp", label: "Bandcamp" },
-  { value: "vimeo", label: "Vimeo" },
 ]
 
 function SkeletonCard({ delay }: { delay: number }) {

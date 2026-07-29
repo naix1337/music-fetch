@@ -11,6 +11,7 @@ interface YtDlpEntry {
   uploader?: string;
   thumbnail?: string;
   url?: string;
+  webpage_url?: string;
 }
 
 interface SearchResult {
@@ -26,27 +27,12 @@ interface SearchResult {
 const SEARCH_SOURCES: Record<string, string> = {
   youtube: 'ytsearch',
   soundcloud: 'scsearch',
-  bandcamp: 'bcsearch',
-  vimeo: 'vimeosearch',
 };
 
 function formatDuration(duration: number): string {
   const minutes = Math.floor(duration / 60);
   const seconds = duration % 60;
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
-}
-
-function buildUrl(id: string, source: string): string {
-  switch (source) {
-    case 'soundcloud':
-      return `https://soundcloud.com/${id}`;
-    case 'bandcamp':
-      return `https://${id}`;
-    case 'vimeo':
-      return `https://vimeo.com/${id}`;
-    default:
-      return `https://www.youtube.com/watch?v=${id}`;
-  }
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -94,7 +80,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           duration,
           duration_str: formatDuration(duration),
           channel: data.channel ?? data.uploader ?? 'Unknown',
-          url: buildUrl(id, source),
+          url: data.webpage_url ?? data.url ?? '',
           thumbnail: data.thumbnail ?? '',
         };
       });
